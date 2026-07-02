@@ -25,5 +25,9 @@ Proyek ini dibangun untuk memenuhi komponen penilaian Final Project mata kuliah 
    ```bash
    npm install
 ## Link Youtube
-https://youtu.be/vNN_88gj2i0
+https://youtu.be/8fjBXep7RDM
+
+## Link Dokumentasi
+https://drive.google.com/drive/folders/1UaGN5HLpMxOb7hAA7xOe6sDCDasy3EVL?usp=sharing
+
 
