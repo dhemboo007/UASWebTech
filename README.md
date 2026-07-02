@@ -27,7 +27,7 @@ Proyek ini dibangun untuk memenuhi komponen penilaian Final Project mata kuliah 
 ## Link Youtube
 https://youtu.be/8fjBXep7RDM
 
-## Link Dokumentasi
+## Link Dokumentasi & Laporan Project
 https://drive.google.com/drive/folders/1UaGN5HLpMxOb7hAA7xOe6sDCDasy3EVL?usp=sharing
 
 
