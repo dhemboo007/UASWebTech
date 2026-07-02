@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pencatatan Keuangan Pribadi Pro</title>
+    <title>FinTrack Pro - Pencatatan Keuangan</title>
     <link rel="stylesheet" href="style.css">
-    <!-- FontAwesome untuk ikon agar UI lebih interaktif -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
     <div class="container">
-        <h2><i class="fa-solid fa-wallet text-primary"></i> FinTrack Pro</h2>
+        <h2><i class="fa-solid fa-wallet text-primary"></i> FinTrack Pro - Fatih El Rayyan</h2>
         
-        <!-- Live Exchange Rate Widget (Added Value Integrasi API Publik) -->
         <div class="rate-card">
             <div>
                 <span class="rate-title"><i class="fa-solid fa-chart-line"></i> Info Kurs Hari Ini (USD ke IDR)</span>
@@ -21,7 +19,6 @@
             <i class="fa-solid fa-globe rate-icon"></i>
         </div>
 
-        <!-- Dashboard Ringkasan Finansial -->
         <div class="dashboard-grid">
             <div class="card card-total">
                 <span class="card-title">Total Pengeluaran</span>
@@ -29,13 +26,15 @@
             </div>
             <div class="card card-count">
                 <span class="card-title">Jumlah Transaksi</span>
-                <span class="card-value" id="jumlahTransaksi">0</span>
+                <span class="card-value" id="jumlahTransaksi">0 Data</span>
             </div>
         </div>
         
-        <!-- Form Input -->
         <form id="formTransaksi">
-            <h3><i class="fa-solid fa-plus-circle"></i> Tambah Transaksi Baru</h3>
+            <input type="hidden" id="editId">
+            
+            <h3><i class="fa-solid fa-plus-circle"></i> <span id="formTitle">Tambah Transaksi Baru</span></h3>
+            
             <div class="form-grid">
                 <div class="form-group">
                     <label for="tanggal">Tanggal</label>
@@ -55,18 +54,17 @@
 
             <div class="form-group">
                 <label for="deskripsi">Deskripsi</label>
-                <input type="text" id="deskripsi" placeholder="Contoh: Makan siang bareng teman">
+                <input type="text" id="deskripsi" placeholder="Contoh: Makan siang nasi padang">
             </div>
 
             <div class="form-group">
                 <label for="nominal">Nominal (Rp)</label>
-                <input type="number" id="nominal" placeholder="Masukkan jumlah nominal" required>
+                <input type="number" id="nominal" placeholder="Masukkan jumlah uang" required>
             </div>
 
-            <button type="submit"><i class="fa-solid fa-paper-plane"></i> Simpan Transaksi</button>
+            <button type="submit" id="btnSubmit"><i class="fa-solid fa-paper-plane"></i> Simpan Transaksi</button>
         </form>
 
-        <!-- Bagian Filter & List Data -->
         <div class="list-header">
             <h3><i class="fa-solid fa-history"></i> Riwayat Transaksi</h3>
             <select id="filterKategori" class="filter-select">
