@@ -1,15 +1,13 @@
 const API_URL = 'http://localhost:3000/api/transaksi';
-let semuaTransaksi = []; // Tempat menyimpan data lokal untuk keperluan filter
+let semuaTransaksi = []; // Penyimpanan lokal data untuk fungsi filter
 
 document.addEventListener('DOMContentLoaded', () => {
     muatTransaksi();
-    ambilKursEksternal(); // Jalankan integrasi API publik
-    
-    // Pasang Event Listener untuk fitur filter tambahan
+    ambilKursEksternal(); // Mengambil data API publik eksternal
     document.getElementById('filterKategori').addEventListener('change', saringTransaksi);
 });
 
-// Added Value: Integrasi Data API Publik Eksternal
+// Integrasi Fetch API Publik untuk Kurs Mata Uang USD ke IDR
 async function ambilKursEksternal() {
     try {
         const res = await fetch('https://open.er-api.com/v6/latest/USD');
@@ -20,18 +18,18 @@ async function ambilKursEksternal() {
         }
     } catch (err) {
         document.getElementById('kursUSD').innerText = "Gagal memuat info kurs";
-        console.error("Gagal fetch API publik:", err);
+        console.error("Gagal memuat data kurs eksternal:", err);
     }
 }
 
-// Ambil & Tampilkan Data, sekaligus menghitung statistik Dashboard (Added Value)[cite: 2]
+// Mengambil Data Utama dari Backend SQLite
 async function muatTransaksi() {
     const res = await fetch(API_URL);
     semuaTransaksi = await res.json();
-    saringTransaksi(); // Render list sesuai filter aktif
+    saringTransaksi(); // Tampilkan list berdasarkan filter aktif
 }
 
-// Fungsi Menghitung Angka Dashboard Ringkasan
+// Menghitung Angka di Statistik Dashboard Ringkasan
 function hitungDashboard(data) {
     let total = 0;
     data.forEach(t => total += t.nominal);
@@ -40,18 +38,16 @@ function hitungDashboard(data) {
     document.getElementById('jumlahTransaksi').innerText = `${data.length} Data`;
 }
 
-// Fitur Tambahan: Saring Data Berdasarkan Kategori Tanpa Reload Page
+// Menyaring dan Merender Data ke Layar
 function saringTransaksi() {
     const filterAktif = document.getElementById('filterKategori').value;
     const wadah = document.getElementById('daftarTransaksi');
     wadah.innerHTML = '';
 
-    // Proses filtering array javascript
     const dataTerfilter = semuaTransaksi.filter(t => {
         return filterAktif === 'Semua' || t.kategori === filterAktif;
     });
 
-    // Update data ringkasan dashboard sesuai filter atau total data keseluruhan
     hitungDashboard(filterAktif === 'Semua' ? semuaTransaksi : dataTerfilter);
 
     if (dataTerfilter.length === 0) {
@@ -59,7 +55,6 @@ function saringTransaksi() {
         return;
     }
 
-    // Render item ke UI dengan struktur visual yang elok[cite: 2]
     dataTerfilter.forEach(t => {
         const div = document.createElement('div');
         div.className = 'item-transaksi';
@@ -70,33 +65,69 @@ function saringTransaksi() {
                 <span class="deskripsi-teks">${t.deskripsi || '-'}</span>
                 <div class="nominal-teks">Rp ${Number(t.nominal).toLocaleString('id-ID')}</div>
             </div>
-            <button class="btn-hapus" onclick="hapusTransaksi(${t.id})"><i class="fa-regular fa-trash-can"></i> Hapus</button>
+            <div class="aksi-tombol">
+                <button class="btn-edit" onclick="pemicuEdit(${JSON.stringify(t).replace(/"/g, '&quot;')})"><i class="fa-regular fa-pen-to-square"></i> Edit</button>
+                <button class="btn-hapus" onclick="hapusTransaksi(${t.id})"><i class="fa-regular fa-trash-can"></i> Hapus</button>
+            </div>
         `;
         wadah.appendChild(div);
     });
 }
 
-// Tambah Transaksi (POST)
+// Memicu Mode Edit: Menaikkan Data Lama Kembali ke Form Input
+function pemicuEdit(transaksi) {
+    document.getElementById('editId').value = transaksi.id;
+    document.getElementById('tanggal').value = transaksi.tanggal;
+    document.getElementById('kategori').value = transaksi.kategori;
+    document.getElementById('deskripsi').value = transaksi.deskripsi || '';
+    document.getElementById('nominal').value = transaksi.nominal;
+
+    // Mengubah judul form dan teks tombol submit
+    document.getElementById('formTitle').innerText = "Edit / Perbarui Transaksi";
+    document.getElementById('btnSubmit').innerHTML = `<i class="fa-solid fa-file-pen"></i> Perbarui Transaksi`;
+    
+    // Geser halaman ke atas secara halus agar user fokus pada form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Mengatur Pengiriman Form (Bisa Aksi Tambah POST atau Aksi Update PUT)
 document.getElementById('formTransaksi').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const dataBaru = {
+    
+    const idEdit = document.getElementById('editId').value;
+    const dataTransaksi = {
         tanggal: document.getElementById('tanggal').value,
         kategori: document.getElementById('kategori').value,
         deskripsi: document.getElementById('deskripsi').value,
         nominal: parseFloat(document.getElementById('nominal').value)
     };
 
-    await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataBaru)
-    });
+    if (idEdit) {
+        // Mode UPDATE (PUT)
+        await fetch(`${API_URL}/${idEdit}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dataTransaksi)
+        });
+    } else {
+        // Mode TAMBAH BARU (POST)
+        await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dataTransaksi)
+        });
+    }
 
+    // Mengembalikan form ke keadaan default/tambah semula
+    document.getElementById('editId').value = '';
     document.getElementById('formTransaksi').reset();
+    document.getElementById('formTitle').innerText = "Tambah Transaksi Baru";
+    document.getElementById('btnSubmit').innerHTML = `<i class="fa-solid fa-paper-plane"></i> Simpan Transaksi`;
+    
     muatTransaksi();
 });
 
-// Hapus Transaksi (DELETE)
+// Menghapus Data Transaksi (DELETE)
 async function hapusTransaksi(id) {
     if (confirm('Apakah Anda yakin ingin menghapus catatan pengeluaran ini?')) {
         await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
