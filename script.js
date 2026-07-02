@@ -1,136 +1,194 @@
-const API_URL = 'http://localhost:3000/api/transaksi';
-let semuaTransaksi = []; // Penyimpanan lokal data untuk fungsi filter
-
-document.addEventListener('DOMContentLoaded', () => {
-    muatTransaksi();
-    ambilKursEksternal(); // Mengambil data API publik eksternal
-    document.getElementById('filterKategori').addEventListener('change', saringTransaksi);
-});
-
-// Integrasi Fetch API Publik untuk Kurs Mata Uang USD ke IDR
-async function ambilKursEksternal() {
-    try {
-        const res = await fetch('https://open.er-api.com/v6/latest/USD');
-        const data = await res.json();
-        if (data && data.rates && data.rates.IDR) {
-            const rupiah = Math.round(data.rates.IDR).toLocaleString('id-ID');
-            document.getElementById('kursUSD').innerText = `1 USD = Rp ${rupiah}`;
-        }
-    } catch (err) {
-        document.getElementById('kursUSD').innerText = "Gagal memuat info kurs";
-        console.error("Gagal memuat data kurs eksternal:", err);
-    }
+/* Reset & Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
-// Mengambil Data Utama dari Backend SQLite
-async function muatTransaksi() {
-    const res = await fetch(API_URL);
-    semuaTransaksi = await res.json();
-    saringTransaksi(); // Tampilkan list berdasarkan filter aktif
+body {
+    background-color: #f0f4f8;
+    color: #1e293b;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+    padding: 40px 20px;
 }
 
-// Menghitung Angka di Statistik Dashboard Ringkasan
-function hitungDashboard(data) {
-    let total = 0;
-    data.forEach(t => total += t.nominal);
-    
-    document.getElementById('totalPengeluaran').innerText = `Rp ${total.toLocaleString('id-ID')}`;
-    document.getElementById('jumlahTransaksi').innerText = `${data.length} Data`;
+.container {
+    width: 100%;
+    max-width: 650px;
+    background: #ffffff;
+    padding: 35px;
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(30, 41, 59, 0.05);
 }
 
-// Menyaring dan Merender Data ke Layar
-function saringTransaksi() {
-    const filterAktif = document.getElementById('filterKategori').value;
-    const wadah = document.getElementById('daftarTransaksi');
-    wadah.innerHTML = '';
-
-    const dataTerfilter = semuaTransaksi.filter(t => {
-        return filterAktif === 'Semua' || t.kategori === filterAktif;
-    });
-
-    hitungDashboard(filterAktif === 'Semua' ? semuaTransaksi : dataTerfilter);
-
-    if (dataTerfilter.length === 0) {
-        wadah.innerHTML = `<div style="text-align:center; padding:20px; color:#94a3b8;">Tidak ada catatan untuk kategori ini.</div>`;
-        return;
-    }
-
-    dataTerfilter.forEach(t => {
-        const div = document.createElement('div');
-        div.className = 'item-transaksi';
-        div.innerHTML = `
-            <div class="info-transaksi">
-                <strong><i class="fa-regular fa-calendar"></i> ${t.tanggal}</strong>
-                <span class="kategori-tag tag-${t.kategori}">${t.kategori}</span>
-                <span class="deskripsi-teks">${t.deskripsi || '-'}</span>
-                <div class="nominal-teks">Rp ${Number(t.nominal).toLocaleString('id-ID')}</div>
-            </div>
-            <div class="aksi-tombol">
-                <button class="btn-edit" onclick="pemicuEdit(${JSON.stringify(t).replace(/"/g, '&quot;')})"><i class="fa-regular fa-pen-to-square"></i> Edit</button>
-                <button class="btn-hapus" onclick="hapusTransaksi(${t.id})"><i class="fa-regular fa-trash-can"></i> Hapus</button>
-            </div>
-        `;
-        wadah.appendChild(div);
-    });
+/* Header */
+h2 {
+    color: #0f172a;
+    font-size: 1.6rem;
+    margin-bottom: 20px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
-// Memicu Mode Edit: Menaikkan Data Lama Kembali ke Form Input
-function pemicuEdit(transaksi) {
-    document.getElementById('editId').value = transaksi.id;
-    document.getElementById('tanggal').value = transaksi.tanggal;
-    document.getElementById('kategori').value = transaksi.kategori;
-    document.getElementById('deskripsi').value = transaksi.deskripsi || '';
-    document.getElementById('nominal').value = transaksi.nominal;
+.text-primary { color: #3b82f6; }
 
-    // Mengubah judul form dan teks tombol submit
-    document.getElementById('formTitle').innerText = "Edit / Perbarui Transaksi";
-    document.getElementById('btnSubmit').innerHTML = `<i class="fa-solid fa-file-pen"></i> Perbarui Transaksi`;
-    
-    // Geser halaman ke atas secara halus agar user fokus pada form
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+/* API Publik: Rate Card Widget */
+.rate-card {
+    background: linear-gradient(135deg, #1e293b, #334155);
+    color: #f8fafc;
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.rate-title { font-size: 0.8rem; color: #94a3b8; display: block; margin-bottom: 2px;}
+.rate-value { font-size: 1.1rem; font-weight: 600; color: #38bdf8; }
+.rate-icon { font-size: 1.5rem; color: #475569; }
+
+/* Dashboard Cards Grid */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 25px;
 }
 
-// Mengatur Pengiriman Form (Bisa Aksi Tambah POST atau Aksi Update PUT)
-document.getElementById('formTransaksi').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const idEdit = document.getElementById('editId').value;
-    const dataTransaksi = {
-        tanggal: document.getElementById('tanggal').value,
-        kategori: document.getElementById('kategori').value,
-        deskripsi: document.getElementById('deskripsi').value,
-        nominal: parseFloat(document.getElementById('nominal').value)
-    };
-
-    if (idEdit) {
-        // Mode UPDATE (PUT)
-        await fetch(`${API_URL}/${idEdit}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dataTransaksi)
-        });
-    } else {
-        // Mode TAMBAH BARU (POST)
-        await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(dataTransaksi)
-        });
-    }
-
-    // Mengembalikan form ke keadaan default/tambah semula
-    document.getElementById('editId').value = '';
-    document.getElementById('formTransaksi').reset();
-    document.getElementById('formTitle').innerText = "Tambah Transaksi Baru";
-    document.getElementById('btnSubmit').innerHTML = `<i class="fa-solid fa-paper-plane"></i> Simpan Transaksi`;
-    
-    muatTransaksi();
-});
-
-// Menghapus Data Transaksi (DELETE)
-async function hapusTransaksi(id) {
-    if (confirm('Apakah Anda yakin ingin menghapus catatan pengeluaran ini?')) {
-        await fetch(`${API_URL}/${id}`, { method: 'DELETE' });
-        muatTransaksi();
-    }
+.card {
+    padding: 18px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
+.card-total { background-color: #ef44440f; border: 1px solid #ef444422; }
+.card-count { background-color: #3b82f60f; border: 1px solid #3b82f622; }
+.card-title { font-size: 0.85rem; font-weight: 600; color: #64748b; text-transform: uppercase; }
+.card-value { font-size: 1.4rem; font-weight: 700; }
+#totalPengeluaran { color: #dc2626; }
+#jumlahTransaksi { color: #2563eb; }
+
+/* Form Styles */
+form {
+    background: #f8fafc;
+    padding: 20px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 30px;
+}
+form h3 { margin-bottom: 15px; font-size: 1rem; color: #475569; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 15px; }
+label { font-size: 0.85rem; font-weight: 600; color: #475569; }
+
+input, select {
+    padding: 11px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    background: #fff;
+    outline: none;
+    transition: all 0.2s;
+}
+input:focus, select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+button[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+button[type="submit"]:hover { background-color: #2563eb; }
+
+/* Filter Section */
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.list-header h3 { font-size: 1.1rem; font-weight: 600; }
+.filter-select { width: auto; padding: 6px 12px; font-size: 0.85rem; border-radius: 6px; }
+
+/* Transaction List Item */
+#daftarTransaksi { display: flex; flex-direction: column; gap: 12px; }
+.item-transaksi {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+    transition: transform 0.2s;
+}
+.item-transaksi:hover { transform: scale(1.01); }
+
+.info-transaksi strong { color: #94a3b8; font-size: 0.75rem; display: block; margin-bottom: 6px; }
+.kategori-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 20px;
+    margin-right: 8px;
+}
+
+/* Dinamis Warna Tag Kategori */
+.tag-Makanan { background: #ffedd5; color: #ea580c; }
+.tag-Transportasi { background: #dbeafe; color: #2563eb; }
+.tag-Hiburan { background: #f3e8ff; color: #9333ea; }
+.tag-Lainnya { background: #f1f5f9; color: #475569; }
+
+.deskripsi-teks { font-size: 0.95rem; font-weight: 500; color: #334155; }
+.nominal-teks { font-size: 1.1rem; font-weight: 700; color: #dc2626; margin-top: 6px; }
+
+/* Action Buttons Container */
+.aksi-tombol {
+    display: flex;
+    gap: 8px;
+}
+
+/* Edit & Delete Button Styles */
+.btn-edit {
+    background: #f0fdf4;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-edit:hover { background: #16a34a; color: white; }
+
+.btn-hapus {
+    background: #fff5f5;
+    color: #ef4444;
+    border: 1px solid #fee2e2;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-hapus:hover { background: #ef4444; color: white; }
