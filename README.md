@@ -1,6 +1,6 @@
 # FinTrack Pro - Aplikasi Pencatatan Keuangan Pribadi
 
-Proyek ini dibangun untuk memenuhi komponen penilaian Final Project mata kuliah Teknologi Web (ISWD102) di Universitas Ary Ginanjar.
+Proyek ini dibangun untuk memenuhi komponen penilaian Final Project mata kuliah Teknologi Web di Universitas Ary Ginanjar.
 
 ## Identitas Mahasiswa
 - **Nama:** Fatih El Rayyan
@@ -24,3 +24,6 @@ Proyek ini dibangun untuk memenuhi komponen penilaian Final Project mata kuliah 
 3. Instal semua dependencies yang diperlukan dengan menjalankan:
    ```bash
    npm install
+## Link Youtube
+https://youtu.be/vNN_88gj2i0
+
